@@ -1,11 +1,26 @@
 #! /bin/bash
 
+#
+# Args:
+# --image <image>      the image that was built, e.g. artie-image-dev
+# --machine <MACHINE>  the board it was built for (default: raspberrypi4-64)
+#
+# Assembles an SD card image from the build's boot files, kernel, device tree and root
+# filesystem. This is a Raspberry Pi style SD card (FAT boot partition, ext4 root), so it
+# only knows the Raspberry Pi boards below.
+
 POSITIONAL_ARGS=()
+MACHINE="raspberrypi4-64"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     -i|--image)
       TARGET_IMAGE="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -m|--machine)
+      MACHINE="$2"
       shift # past argument
       shift # past value
       ;;
@@ -19,13 +34,26 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# What differs between boards: the device tree to put in the boot partition, and the name the
+# firmware expects the kernel under.
+case "$MACHINE" in
+  raspberrypi4-64)
+    DTB_NAME="bcm2711-rpi-4-b.dtb"
+    KERNEL_DEST_NAME="kernel8.img"
+    ;;
+  *)
+    echo "create-img.sh does not know how to make an SD card image for machine '$MACHINE'."
+    exit 1
+    ;;
+esac
+
 SCRIPTDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-IMAGESDIR=${SCRIPTDIR}/build/tmp/deploy/images/raspberrypi4-64
-RTFS_NAME="${TARGET_IMAGE}-raspberrypi4-64.rootfs.tar.bz2"
+IMAGESDIR=${SCRIPTDIR}/build/tmp/deploy/images/${MACHINE}
+RTFS_NAME="${TARGET_IMAGE}-${MACHINE}.rootfs.tar.bz2"
 
 # All the stuff we need to copy to the SD card image
 KERNELIMG=${IMAGESDIR}/Image
-DTBS=${IMAGESDIR}/bcm2711-rpi-4-b.dtb
+DTBS=${IMAGESDIR}/${DTB_NAME}
 BOOTFILESDIR=${IMAGESDIR}/bootfiles
 RTFS=${IMAGESDIR}/${RTFS_NAME}
 PI_IMG=${SCRIPTDIR}/pi.img
@@ -95,13 +123,13 @@ sudo mount -o loop "${LOOPDEV}"p1 /tmp/mnt
 sudo cp -r "${BOOTFILESDIR}"/* /tmp/mnt/
 sudo cp ${DTBS} /tmp/mnt/
 sudo mkdir /tmp/mnt/overlays
-for f in $( ls "${IMAGESDIR}"/*.dtbo | grep -v -e "-raspberrypi4-64" )
+for f in $( ls "${IMAGESDIR}"/*.dtbo | grep -v -e "-${MACHINE}" )
 do
     if [ -L ${f} ]; then
         sudo cp ${f} /tmp/mnt/overlays/
     fi
 done
-sudo cp ${KERNELIMG} /tmp/mnt/kernel8.img
+sudo cp ${KERNELIMG} /tmp/mnt/${KERNEL_DEST_NAME}
 
 # Unmount
 sudo umount /tmp/mnt

@@ -15,12 +15,12 @@ PV = "1.0+git${SRCPV}"
 # Where to keep downloaded source files
 S = "${WORKDIR}/git"
 
+# On a Raspberry Pi, rpi-gpio is added too: see dynamic-layers/raspberrypi.
 RDEPENDS:${PN} += " python3 \
                     python3-core \
                     python3-modules \
                     artie-i2c \
                     artie-util \
-                    rpi-gpio \
                   "
 
 LED_DAEMON_INSTALL_PATH = "${sysconfdir}/systemd/system/led-daemon.service"

@@ -1,3 +1,8 @@
 # Meta-Controller-Node
 
-This layer contains the stuff that is custom for the Artie Controller Module.
+This layer contains the stuff that is custom for the Artie Controller Module: its images
+(artie-image-dev and artie-image-release), the packages only a controller node needs, and
+each supported board's controller-node configuration (conf/artie-boards/<MACHINE>.conf).
+
+Everything every Artie image needs is in meta-artie
+(https://github.com/ArtieBots/meta-artie), which this layer depends on.
